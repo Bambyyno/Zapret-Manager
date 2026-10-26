@@ -5,46 +5,7 @@
 **Одна панель для обхода блокировок на роутере OpenWrt — Zapret, Steer, Forkozz, ByeTube, Mixomo, TG WS Proxy, AmneziaWG, DoH, блокировка рекламы и hosts в одном месте.**
 
 [![Stars](https://img.shields.io/github/stars/StressOzz/Zapret-Manager?style=for-the-badge&color=38BDF8)](https://github.com/StressOzz/Zapret-Manager/stargazers)
-[![Telegram](https://img.shields.io/badge/Telegram-сообщество-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/stressozz_manager)
-[![StressKVN](https://img.shields.io/badge/StressKVN-обход_белых_списков-3C3489?style=for-the-badge)](http://stresskvn.lol/)
-[![Views](https://gitviews.com/repo/StressOzz/Zapret-Manager.svg?style=for-the-badge&label=Views&label-color=%23555&color=%2310B981&base=559060)](https://github.com/StressOzz/Zapret-Manager)
 </div>
-
----
-
-### StressKVN — умный VPN для стабильного доступа в любых условиях
-
-- ✅ Работает даже при жёсткой фильтрации и белых списках
-- 🌍 Умная маршрутизация: зарубежные ресурсы идут через VPN, российские — напрямую
-- 📶 Подходит для роутеров на **OpenWrt**: настраивается один раз и работает для всех устройств в сети
-- 🧩 Подключается в **Zapret Manager**
-- ▶️ YouTube без рекламы
-- ⚡ Высокая скорость и безлимитный трафик
-- 🎁 Бесплатный тест на 3 дня
-
-👉 Подробнее: **[StressKVN на GitHub](https://github.com/StressOzz/StressKVN)**
-
----
-
-
-### Для Windows - используйте: **https://github.com/StressOzz/ZapretOzz**
-
----
-
-<table>
-  <tr>
-    <td>
-      <a href="https://github.com/StressOzz#-поддержать-проект">
-        <img width="280" height="130" src="https://github.com/user-attachments/assets/2999757b-fbf3-4149-bf6c-48bf3e241529">
-      </a>
-    </td>
-    <td>
-      <a href="https://github.com/StressOzz/StressKVN">
-        <img width="280" height="130" alt="image" src="https://github.com/user-attachments/assets/519a126e-bd39-4f46-8a09-3f0d6e1dd8af">
-      </a>
-    </td>
-  </tr>
-</table>
 
 ---
 
@@ -270,7 +231,8 @@ ssh root@192.168.1.1
 Скопируйте эту строку, вставьте в окно SSH (в Windows-терминале — **правой кнопкой мыши** или `Ctrl+V`) и нажмите **Enter**:
 
 ```sh
-sh <(wget -qO - https://raw.githubusercontent.com/StressOzz/Zapret-Manager/refs/heads/main/ZapretManager_LuCI.sh)
+wget -O /tmp/ZapretManager_LuCI.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/refs/heads/main/ZapretManager_LuCI.sh
+sh /tmp/ZapretManager_LuCI.sh
 ```
 
 Установщик всё сделает сам и будет писать по-русски, что происходит. Зелёные галочки `✓` — шаг выполнен, жёлтые `!` — предупреждение (обычно не страшно, там написано, что делать).
@@ -329,13 +291,14 @@ Web UI: http://192.168.1.1:7788
 
 | Команда | Что делает |
 |---|---|
-| **`zmw`** | Переустанавливает / обновляет эту панель (LuCI + Web UI) — та же команда установки, только короче. |
-| **`zms`** | Запускает консольную версию [Zapret-Manager.sh](https://github.com/StressOzz/Zapret-Manager) прямо в терминале — удобно, когда браузер не нужен. |
+| **`zmw`** | Запускает уже сохранённый установщик панели. Новый скрипт из сети при этом не скачивается. |
+| **`zms`** | Запускает сохранённую копию [Zapret-Manager.sh](https://github.com/StressOzz/Zapret-Manager) в терминале. |
 
 > [!NOTE]
 > Нужна только версия **для SSH**, без веб-панели? Описание — [**readme_ssh.md**](https://github.com/StressOzz/Zapret-Manager/blob/main/readme_ssh.md), установка:
 > ```
-> sh <(wget -qO - 'https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh')
+> wget -O /tmp/Zapret-Manager.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh
+> sh /tmp/Zapret-Manager.sh
 > ```
 
 ---
@@ -890,7 +853,7 @@ Web UI: http://192.168.1.1:7788
 > **Кому нужен:** тем, кто хочет обход и на телефоне вне дома, без отдельного VPN-сервиса.
 
 > [!IMPORTANT]
-> **Не для новичков.** Ставьте, только если готовы разобраться, как настраивается Tailscale: сервер, одобрение маршрутов, приложение на телефоне. Панель ведёт по шагам, но часть шагов делается в панели сервера и на телефоне. Белые списки этот способ не обходит — для них есть [StressKVN](https://github.com/StressOzz/StressKVN).
+> **Не для новичков.** Ставьте, только если готовы разобраться, как настраивается Tailscale: сервер, одобрение маршрутов, приложение на телефоне. Панель ведёт по шагам, но часть шагов делается в панели сервера и на телефоне. Белые списки этот способ не обходит.
 
 Работает на [Tailscale](https://github.com/tailscale/tailscale): устройства находят друг друга через сервер, а сам трафик идёт **напрямую** между телефоном и роутером и зашифрован — сервер его не видит. Ставится уменьшенная сборка [openwrt-tailscale](https://github.com/GuNanOvO/openwrt-tailscale) и страница для LuCI с GitHub; панель заранее покажет, сколько флеш-памяти нужно.
 
@@ -1002,7 +965,7 @@ Web UI: http://192.168.1.1:7788
 
 - **Адреса, ключи, пароли и ссылки подписок в отчёт не попадают** — его можно смело отправлять в чат поддержки.
 - Кнопки **«Скопировать отчёт»** и **«Сохранить в файл»** (текстовый файл).
-- *Зачем:* когда просите помощи в [сообществе](https://t.me/stressozz_manager), вместо десятка вопросов «а что у вас стоит?» достаточно прислать отчёт.
+- *Зачем:* если просите помощи, вместо десятка вопросов «а что у вас стоит?» достаточно прислать отчёт.
 
 #### 💾 Резервная копия панели
 
@@ -1219,7 +1182,7 @@ uci show uhttpd.zmweb
 <details>
 <summary><b>Ничего не помогло</b></summary>
 
-Зайдите в **Система → Системная информация**, нажмите **«Скопировать отчёт»** и напишите в [Telegram-сообщество](https://t.me/stressozz_manager), приложив отчёт и описав проблему. Так вам помогут гораздо быстрее.
+Зайдите в **Система → Системная информация**, нажмите **«Скопировать отчёт»** и приложите его к описанию проблемы.
 
 </details>
 
@@ -1237,7 +1200,7 @@ uci show uhttpd.zmweb
 <details>
 <summary><b>У меня обычный роутер (Keenetic, TP-Link, Asus, роутер от провайдера…) — подойдёт?</b></summary>
 
-Только если на нём стоит прошивка **OpenWrt**. На заводской прошивке панель работать не будет. Многие роутеры можно перепрошить на OpenWrt — поддерживается ли ваша модель, можно проверить в [списке устройств OpenWrt](https://openwrt.org/toh/start). Нужен обход только на компьютере с Windows — используйте **[ZapretOzz](https://github.com/StressOzz/ZapretOzz)**.
+Только если на нём стоит прошивка **OpenWrt**. На заводской прошивке панель работать не будет. Многие роутеры можно перепрошить на OpenWrt — поддерживается ли ваша модель, можно проверить в [списке устройств OpenWrt](https://openwrt.org/toh/start).
 
 </details>
 
@@ -1472,8 +1435,6 @@ Zapret Manager собирает в одном месте работу этих �
 ### 💬 Сообщество
 
 Есть вопрос или что-то не получается? Пишите — помогут.
-
-[**Telegram — Zapret Manager**](https://t.me/stressozz_manager) · [**StressKVN — обход белых списков**](http://stresskvn.lol/)
 
 Made with ❤️ by **[StressOzz](https://github.com/StressOzz)** for the OpenWrt community
 

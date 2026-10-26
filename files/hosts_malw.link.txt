@@ -24,7 +24,6 @@
 143.20.64.55 tcr9i.chat.openai.com
 143.20.64.55 webrtc.chatgpt.com
 143.20.64.55 android.chat.openai.com
-143.20.64.55 api.openai.com
 143.20.64.55 operator.chatgpt.com
 143.20.64.55 sora.chatgpt.com
 143.20.64.55 videos.openai.com
@@ -61,7 +60,6 @@
 143.20.64.55 www-growth.scdn.co
 
 # GitHub Copilot
-143.20.64.55 api.github.com
 143.20.64.55 api.individual.githubcopilot.com
 143.20.64.55 proxy.individual.githubcopilot.com
 
@@ -165,7 +163,6 @@
 # Claude
 143.20.64.55 claude.ai
 143.20.64.55 console.anthropic.com
-143.20.64.55 api.anthropic.com
 143.20.64.55 platform.claude.com
 143.20.64.55 a.claude.ai
 

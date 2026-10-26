@@ -139,10 +139,6 @@
 192.255.159.240 api.chatgpt.com
 192.3.233.253 api.chatgpt.com
 107.175.76.134 api.chatgpt.com
-192.255.159.240 api.openai.com
-192.255.159.241 api.openai.com
-107.175.76.134 api.openai.com
-192.3.233.253 api.openai.com
 192.255.159.241 arena.openai.com
 192.255.159.240 arena.openai.com
 192.3.233.253 arena.openai.com
@@ -155,10 +151,6 @@
 192.255.159.241 auth0.openai.com
 107.175.76.134 auth0.openai.com
 192.3.233.253 auth0.openai.com
-192.255.159.240 beta.api.openai.com
-192.255.159.241 beta.api.openai.com
-107.175.76.134 beta.api.openai.com
-192.3.233.253 beta.api.openai.com
 192.255.159.240 beta.openai.com
 192.255.159.241 beta.openai.com
 107.175.76.134 beta.openai.com
@@ -447,10 +439,6 @@
 192.255.159.240 operator.chatgpt.com
 192.3.233.253 operator.chatgpt.com
 107.175.76.134 operator.chatgpt.com
-192.255.159.241 platform.api.openai.com
-192.255.159.240 platform.api.openai.com
-192.3.233.253 platform.api.openai.com
-107.175.76.134 platform.api.openai.com
 192.255.159.241 platform.openai.com
 192.255.159.240 platform.openai.com
 192.3.233.253 platform.openai.com
@@ -531,10 +519,6 @@
 107.175.76.134 www.chess.com
 
 # Claude
-192.255.159.240 a-api.anthropic.com
-192.255.159.241 a-api.anthropic.com
-107.175.76.134 a-api.anthropic.com
-192.3.233.253 a-api.anthropic.com
 192.255.159.241 a-cdn.anthropic.com
 192.255.159.240 a-cdn.anthropic.com
 192.3.233.253 a-cdn.anthropic.com
@@ -547,10 +531,6 @@
 192.255.159.240 www.anthropic.com
 192.3.233.253 www.anthropic.com
 107.175.76.134 www.anthropic.com
-192.255.159.240 api.anthropic.com
-192.255.159.241 api.anthropic.com
-107.175.76.134 api.anthropic.com
-192.3.233.253 api.anthropic.com
 192.255.159.241 api.claude.ai
 192.255.159.240 api.claude.ai
 192.3.233.253 api.claude.ai
@@ -1227,9 +1207,6 @@
 192.3.233.253 www.framer.com
 
 # GitHub Copilot
-193.233.112.68 api.github.com
-193.233.112.67 api.github.com
-46.8.158.6 api.github.com
 193.233.112.67 api.individual.githubcopilot.com
 193.233.112.68 api.individual.githubcopilot.com
 46.8.158.6 api.individual.githubcopilot.com

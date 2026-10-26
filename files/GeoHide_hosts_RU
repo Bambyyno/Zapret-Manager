@@ -114,9 +114,6 @@
 193.233.112.67 api.chatgpt.com
 193.233.112.68 api.chatgpt.com
 46.8.158.6 api.chatgpt.com
-193.233.112.68 api.openai.com
-193.233.112.67 api.openai.com
-46.8.158.6 api.openai.com
 46.8.158.6 arena.openai.com
 193.233.112.67 arena.openai.com
 193.233.112.68 arena.openai.com
@@ -126,9 +123,6 @@
 46.8.158.6 auth0.openai.com
 193.233.112.68 auth0.openai.com
 193.233.112.67 auth0.openai.com
-46.8.158.6 beta.api.openai.com
-193.233.112.68 beta.api.openai.com
-193.233.112.67 beta.api.openai.com
 193.233.112.68 beta.openai.com
 193.233.112.67 beta.openai.com
 46.8.158.6 beta.openai.com
@@ -345,9 +339,6 @@
 46.8.158.6 operator.chatgpt.com
 193.233.112.67 operator.chatgpt.com
 193.233.112.68 operator.chatgpt.com
-46.8.158.6 platform.api.openai.com
-193.233.112.67 platform.api.openai.com
-193.233.112.68 platform.api.openai.com
 193.233.112.67 platform.openai.com
 193.233.112.68 platform.openai.com
 46.8.158.6 platform.openai.com
@@ -409,9 +400,6 @@
 46.8.158.6 www.chess.com
 
 # Claude
-46.8.158.6 a-api.anthropic.com
-193.233.112.68 a-api.anthropic.com
-193.233.112.67 a-api.anthropic.com
 46.8.158.6 a-cdn.anthropic.com
 193.233.112.67 a-cdn.anthropic.com
 193.233.112.68 a-cdn.anthropic.com
@@ -421,9 +409,6 @@
 193.233.112.67 www.anthropic.com
 193.233.112.68 www.anthropic.com
 46.8.158.6 www.anthropic.com
-193.233.112.68 api.anthropic.com
-193.233.112.67 api.anthropic.com
-46.8.158.6 api.anthropic.com
 46.8.158.6 api.claude.ai
 193.233.112.67 api.claude.ai
 193.233.112.68 api.claude.ai
@@ -936,9 +921,6 @@
 193.233.112.67 www.framer.com
 
 # GitHub Copilot
-193.233.112.68 api.github.com
-193.233.112.67 api.github.com
-46.8.158.6 api.github.com
 193.233.112.67 api.individual.githubcopilot.com
 193.233.112.68 api.individual.githubcopilot.com
 46.8.158.6 api.individual.githubcopilot.com
