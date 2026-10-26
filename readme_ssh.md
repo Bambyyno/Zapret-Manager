@@ -6,48 +6,8 @@
 ![Architecture](https://img.shields.io/badge/Architecture-All%20(OpenWrt)-yellow)
 ![Script](https://img.shields.io/badge/Script-sh-informational)
 ![Status](https://img.shields.io/badge/Status-Active-success)
-[![Views](https://views.whatilearened.today/views/github/StressOzz/Zapret-Manager.svg)](https://github.com/StressOzz/Zapret-Manager)
 
 </div>
-
-<p align="center">
-<a href="https://t.me/StressOzz_Manager"><img src="https://img.shields.io/badge/Community-Telegram-2CA5E0?style=for-the-badge&logo=telegram"></a>
-</p>
-
-
----
-
-### **StressKVN** - умный VPN для стабильного доступа в любых условиях
-
-- ✅ Работает даже при жёсткой фильтрации и в условиях белых списков
-- 🌍 Умная маршрутизация: иностранные ресурсы через VPN, российский трафик напрямую
-- ▶️ YouTube без рекламы
-- ⚡ Высокая скорость и безлимитный трафик
-- 📶 Можно использовать прямо на роутере (OpenWRT)
-- 🎁 Бесплатный тест — 3 дня без оплаты
-
-Подробнее: **https://github.com/StressOzz/StressKVN**
-
----
-
-### Для Windows - используйте: **https://github.com/StressOzz/ZapretOzz**
-
----
-
-<table>
-  <tr>
-    <td>
-      <a href="https://github.com/StressOzz#-поддержать-проект">
-        <img width="280" height="130" src="https://github.com/user-attachments/assets/2999757b-fbf3-4149-bf6c-48bf3e241529">
-      </a>
-    </td>
-    <td>
-      <a href="https://github.com/StressOzz/StressKVN">
-        <img width="280" height="130" alt="image" src="https://github.com/user-attachments/assets/519a126e-bd39-4f46-8a09-3f0d6e1dd8af">
-      </a>
-    </td>
-  </tr>
-</table>
 
 ---
 
@@ -57,7 +17,8 @@
 > 
 > Установите панель один раз — в SSH выполните команду:
 > ```
-> sh <(wget -qO - https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/ZapretManager_LuCI.sh)
+> wget -O /tmp/ZapretManager_LuCI.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/ZapretManager_LuCI.sh
+> sh /tmp/ZapretManager_LuCI.sh
 > ```
 > и откройте ссылку в брузере (например, `http://192.168.1.1:7788`) на компьютере или телефоне
 > также, в LuCI появится пункт **Zapret Manager**
@@ -76,7 +37,6 @@
 - [Cтратегии](#-стратегии)
 - [Mixomo](#-mixomo)
 - [Благодарности](#благодарности)
-- [Поддержать проект](https://github.com/StressOzz)
 
 ---
 
@@ -107,7 +67,7 @@
 - Установить [**Mixomo**](https://github.com/Internet-Helper/mixomo-openwrt)
 - Установить [**splify**](https://github.com/xyzmean/splify)
 - Установить [**Zapret2 Routerich Edition**](https://github.com/routerich)
-- Интегрировать [**VPN подпиcку**](https://github.com/StressOzz/StressKVN) в **NetShift** и **Mixomo**
+- Интегрировать VPN-подписку в **NetShift** и **Mixomo**
 - Сгенерировать **WARP** и интегрировать его в **Mixomo**
 - Запустить автоподбор стратегий по расписанию
 
@@ -136,7 +96,8 @@
 
 Для запуска **Zapret Manager** в **LuСI** или **в браузере**, выполните в **SSH**
 ```
-sh <(wget -qO - https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/ZapretManager_LuCI.sh)
+wget -O /tmp/ZapretManager_LuCI.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/ZapretManager_LuCI.sh
+sh /tmp/ZapretManager_LuCI.sh
 ```
 или - запустите основной скрипт → Установить **Zapret Manager для WEB + LuCI**
 
@@ -150,16 +111,11 @@ sh <(wget -qO - https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/
 
 Подключитесь по **SSH** к роутеру и выполните команду:
 > [!IMPORTANT]
-> Если у Вас доступен **githubusercontent.com**:
+> Сохраните скрипт и запустите уже файл. Повторно из сети он сам не скачивается, сторонние зеркала GitHub не используются:
 ```
-sh <(wget -qO - 'https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh')
+wget -O /tmp/Zapret-Manager.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh
+sh /tmp/Zapret-Manager.sh
 ```
-> [!IMPORTANT]
-> Если у Вас **НЕ** доступен **githubusercontent.com**:
-```
-rm -f /tmp/ZMS.sh && wget -T 10 -O /tmp/ZMS.sh "https://v4.gh-proxy.org/raw.githubusercontent.com/StressOzz/Zapret-Manager/refs/heads/main/files/proxy_zms.sh" && sh /tmp/ZMS.sh
-```
-затем в **Меню управления доменами в hosts** выбрать **19** пункт, затем **11** пункт
 
 ---
 
@@ -225,10 +181,8 @@ zms
 - Интегрировать **VPN** подписку в **Mihomo**
 
    Вставьте ссылку на свою подписку.
-   Можете воспользоваться [**StressKVN**](https://github.com/StressOzz/StressKVN)
 
-   Зайдите на http://192.168.1.1:9090/ui 
-   в поле **Хост** введите **192.168.1.1**
+   Панель Mihomo слушает только сам роутер: `127.0.0.1:9090`. С других устройств домашней сети этот порт не открывается.
    во вкладке **Прокси** выберите **Сервер для YouTube** и **Сервер для остального трафика** который поёдйт через списки **MagiTrickle**
    
 - Сгенерируйте **WARP** 
@@ -268,23 +222,6 @@ zms
 --dpi-desync=multidisorder
 . . .
 ```
-
----
-
-<table>
-  <tr>
-    <td>
-      <a href="https://github.com/StressOzz#-поддержать-проект">
-        <img width="280" height="130" src="https://github.com/user-attachments/assets/2999757b-fbf3-4149-bf6c-48bf3e241529">
-      </a>
-    </td>
-    <td>
-      <a href="https://github.com/StressOzz/StressKVN">
-        <img width="280" height="130" alt="image" src="https://github.com/user-attachments/assets/519a126e-bd39-4f46-8a09-3f0d6e1dd8af">
-      </a>
-    </td>
-  </tr>
-</table>
 
 ---
 

@@ -164,11 +164,6 @@
 2.27.118.34 api.chatgpt.com
 31.25.239.132 api.chatgpt.com
 143.20.64.192 api.chatgpt.com
-217.60.245.219 api.openai.com
-217.60.245.233 api.openai.com
-143.20.64.192 api.openai.com
-31.25.239.132 api.openai.com
-2.27.118.34 api.openai.com
 217.60.245.233 arena.openai.com
 217.60.245.219 arena.openai.com
 2.27.118.34 arena.openai.com
@@ -184,11 +179,6 @@
 2.27.118.34 auth0.openai.com
 143.20.64.192 auth0.openai.com
 31.25.239.132 auth0.openai.com
-217.60.245.219 beta.api.openai.com
-217.60.245.233 beta.api.openai.com
-143.20.64.192 beta.api.openai.com
-31.25.239.132 beta.api.openai.com
-2.27.118.34 beta.api.openai.com
 217.60.245.219 beta.openai.com
 217.60.245.233 beta.openai.com
 2.27.118.34 beta.openai.com
@@ -549,11 +539,6 @@
 2.27.118.34 operator.chatgpt.com
 31.25.239.132 operator.chatgpt.com
 143.20.64.192 operator.chatgpt.com
-217.60.245.233 platform.api.openai.com
-217.60.245.219 platform.api.openai.com
-31.25.239.132 platform.api.openai.com
-143.20.64.192 platform.api.openai.com
-2.27.118.34 platform.api.openai.com
 217.60.245.233 platform.openai.com
 217.60.245.219 platform.openai.com
 2.27.118.34 platform.openai.com
@@ -653,11 +638,6 @@
 143.20.64.192 www.chess.com
 
 # Claude
-217.60.245.219 a-api.anthropic.com
-217.60.245.233 a-api.anthropic.com
-143.20.64.192 a-api.anthropic.com
-31.25.239.132 a-api.anthropic.com
-2.27.118.34 a-api.anthropic.com
 217.60.245.233 a-cdn.anthropic.com
 217.60.245.219 a-cdn.anthropic.com
 31.25.239.132 a-cdn.anthropic.com
@@ -673,11 +653,6 @@
 2.27.118.34 www.anthropic.com
 31.25.239.132 www.anthropic.com
 143.20.64.192 www.anthropic.com
-217.60.245.219 api.anthropic.com
-217.60.245.233 api.anthropic.com
-2.27.118.34 api.anthropic.com
-143.20.64.192 api.anthropic.com
-31.25.239.132 api.anthropic.com
 217.60.245.233 api.claude.ai
 217.60.245.219 api.claude.ai
 31.25.239.132 api.claude.ai
@@ -1518,9 +1493,6 @@
 31.25.239.132 www.framer.com
 
 # GitHub Copilot
-193.233.112.68 api.github.com
-193.233.112.67 api.github.com
-46.8.158.6 api.github.com
 193.233.112.67 api.individual.githubcopilot.com
 193.233.112.68 api.individual.githubcopilot.com
 46.8.158.6 api.individual.githubcopilot.com

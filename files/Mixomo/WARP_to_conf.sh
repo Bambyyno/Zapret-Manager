@@ -8,10 +8,13 @@ NC="\033[0m"
 IN="/root/WARP.conf"
 OUT="/etc/mihomo/config.yaml"
 TMP="$(mktemp)"
+mkdir -p /etc/mihomo
+if [ -s /etc/mihomo/.zm_api_secret ]; then APISEC=$(tr -cd 'A-Za-z0-9' < /etc/mihomo/.zm_api_secret | head -c 32); fi
+if [ -z "${APISEC:-}" ]; then APISEC=$(od -An -tx1 -N 16 /dev/urandom 2>/dev/null | tr -d ' \n'); printf '%s\n' "$APISEC" > /etc/mihomo/.zm_api_secret; chmod 600 /etc/mihomo/.zm_api_secret 2>/dev/null; fi
 
 [ -r "$IN" ] || { echo -e "\n${RED}Файл ${NC}$IN ${RED}отсутвтвует!${NC}"; exit 1; }
 
-awk -v OUT="$TMP" '
+awk -v OUT="$TMP" -v APISEC="$APISEC" '
 function trim(s){ gsub(/^[ \t\r\n]+|[ \t\r\n]+$/, "", s); return s }
 function lc(s){ return tolower(s) }
 function yaml_quote(s){
@@ -112,9 +115,9 @@ END{
   print "mode: rule" >> OUT
   print "log-level: error" >> OUT
   print "ipv6: false" >> OUT
-  print "external-controller: 0.0.0.0:9090" >> OUT
+  print "external-controller: 127.0.0.1:9090" >> OUT
   print "external-ui: ./ui" >> OUT
-  print "secret:" >> OUT
+  print "secret: " APISEC >> OUT
   print "unified-delay: true" >> OUT
   print "profile:" >> OUT
   print "  store-selected: true" >> OUT

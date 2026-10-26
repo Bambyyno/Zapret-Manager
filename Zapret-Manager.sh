@@ -6,12 +6,8 @@ ZAPRET_MANAGER_VERSION="9.90"; STR_VERSION_AUTOINSTALL="v7"
 GREEN="\033[1;32m"; RED="\033[1;31m"; CYAN="\033[1;36m"; YELLOW="\033[1;33m"; MAGENTA="\033[1;35m"; BLUE="\033[0;34m"; NC="\033[0m"; DGRAY="\033[38;5;244m"
 
 GH_RAW_HOST="https://raw.githubusercontent.com"; GH_MAIN_HOST="https://github.com"
-# GH_PROXY="https://gh-proxy.org/"; GH_CHECK_URL="${GH_RAW_HOST}/StressOzz/Zapret-Manager/refs/heads/main/Zapret-Manager.sh"
-# echo -e "${CYAN}Проверяем доступность ${NC}raw.githubusercontent.com"; if wget -q -T 4 -O /dev/null "$GH_CHECK_URL" 2>/dev/null; then GH_OK=1
 GH_RAW="$GH_RAW_HOST"
 GH_MAIN="$GH_MAIN_HOST"
-# echo -e "raw.githubusercontent.com ${GREEN}доступен!${NC}\n"; else GH_OK=0; GH_RAW="${GH_PROXY}${GH_RAW_HOST}"; GH_MAIN="${GH_PROXY}${GH_MAIN_HOST}"
-# echo -e "raw.githubusercontent.com ${RED}недоступен${CYAN} — ${YELLOW}используем прокси!${NC}\n"; fi
 
 TGWS_BASE="https://gitlab.com/xyzmean/brb/-/raw/main"
 TGWS_INSTALL_URL="${TGWS_BASE}/install-tgws.sh"
@@ -27,9 +23,64 @@ TG_GO_VERSION="1.4.1"
 TG_MTProto="0.10"
 TGWS_VERSION="0.2.4"
 
-echo "sh <(wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/main/Zapret-Manager.sh)" > /usr/bin/zms; chmod +x /usr/bin/zms
-echo "sh <(wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/main/Zapret-Manager.sh) \"\$@\"" > /usr/bin/zmsA; chmod +x /usr/bin/zmsA
-echo "sh <(wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/main/ZapretManager_LuCI.sh)" > /usr/bin/zmw; chmod +x /usr/bin/zmw
+install_saved_copy() {
+	local src="$0" dir="/opt/zapret-manager" bundle
+	[ -r "$src" ] || return 0
+	mkdir -p "$dir" /usr/share/zapret-manager/files || return 0
+	case "$src" in
+		/opt/zapret-manager/Zapret-Manager.sh) ;;
+		*) cp -f "$src" "$dir/Zapret-Manager.sh" 2>/dev/null || return 0 ;;
+	esac
+	chmod 755 "$dir/Zapret-Manager.sh" 2>/dev/null
+	printf '%s\n' '#!/bin/sh' 'exec sh /opt/zapret-manager/Zapret-Manager.sh "$@"' > /usr/bin/zms
+	cp -f /usr/bin/zms /usr/bin/zmsA
+	chmod 755 /usr/bin/zms /usr/bin/zmsA
+	bundle="$(dirname "$src")"
+	if [ -r "$bundle/ZapretManager_LuCI.sh" ]; then
+		cp -f "$bundle/ZapretManager_LuCI.sh" "$dir/ZapretManager_LuCI.sh"
+		chmod 755 "$dir/ZapretManager_LuCI.sh"
+		printf '%s\n' '#!/bin/sh' 'exec sh /opt/zapret-manager/ZapretManager_LuCI.sh "$@"' > /usr/bin/zmw
+		chmod 755 /usr/bin/zmw
+	fi
+	if [ -d "$bundle/files" ]; then
+		cp -f "$bundle/files/hosts_malw.link.txt" "$bundle/files/hosts_mafioznik.txt" "$bundle/files/GeoHide_hosts_RU" "$bundle/files/GeoHide_hosts_EU" "$bundle/files/GeoHide_hosts_US" /usr/share/zapret-manager/files/ 2>/dev/null || true
+	fi
+}
+install_saved_copy
+
+zm_mihomo_secret() {
+	local f=/etc/mihomo/.zm_api_secret s
+	mkdir -p /etc/mihomo 2>/dev/null
+	if [ -s "$f" ]; then s=$(tr -cd 'A-Za-z0-9' < "$f" | head -c 32); [ -n "$s" ] && { printf '%s' "$s"; return 0; }; fi
+	s=$(od -An -tx1 -N 16 /dev/urandom 2>/dev/null | tr -d ' \n')
+	[ -n "$s" ] || s="zm$(date +%s)$$"
+	printf '%s\n' "$s" > "$f"
+	chmod 600 "$f" 2>/dev/null
+	printf '%s' "$s"
+}
+run_bundled() {
+	local name="$1" p
+	for p in "/opt/zapret-manager/files/Mixomo/$name" "$(dirname "$0")/files/Mixomo/$name"; do
+		if [ -f "$p" ]; then sh "$p"; return $?; fi
+	done
+	echo -e "${RED}Удалённый запуск отключён. Файл files/Mixomo/$name должен лежать на роутере.${NC}"
+	return 1
+}
+apply_bundled_hosts() {
+	local name="$1" label="$2" p src=""
+	for p in "/usr/share/zapret-manager/files/$name" "/opt/zapret-manager/files/$name" "$(dirname "$0")/files/$name"; do
+		[ -s "$p" ] && src="$p" && break
+	done
+	if [ -z "$src" ]; then
+		echo -e "\n${RED}Локальный файл ${NC}$name${RED} не найден. Список из сети не скачивается.${NC}\n"
+		PAUSE
+		return 1
+	fi
+	cp -f "$src" /etc/hosts || { echo -e "${RED}Не удалось записать hosts${NC}"; PAUSE; return 1; }
+	/etc/init.d/dnsmasq restart >/dev/null 2>&1
+	echo -e "hosts ${GREEN}заменён локальным файлом ${NC}$label\n"
+	PAUSE
+}
 
 BASE_URL="${GH_MAIN}/2Grey/awg-openwrt/releases/download/"
 FLOWSEAL_STR_ZIP="${GH_MAIN}/Flowseal/zapret-discord-youtube/archive/refs/heads/main.zip"
@@ -78,7 +129,7 @@ NTC="#ntc.party\n130.255.77.28 ntc.party"; TWCH="#Twitch\n45.155.204.190 usher.t
 RUTOR="#rutor\n172.66.159.63 rutor.info d.rutor.info"; LIBRUSEC="#lib.rus.ec\n185.39.18.98 lib.rus.ec www.lib.rus.ec"
 AI="#Gemini\n45.155.204.190 gemini.google.com\n#Grok\n45.155.204.190 grok.com accounts.x.ai assets.grok.com
 #OpenAI\n45.155.204.190 chatgpt.com ab.chatgpt.com auth.openai.com auth0.openai.com platform.openai.com cdn.oaistatic.com
-45.155.204.190 tcr9i.chat.openai.com webrtc.chatgpt.com android.chat.openai.com api.openai.com operator.chatgpt.com
+45.155.204.190 tcr9i.chat.openai.com webrtc.chatgpt.com android.chat.openai.com operator.chatgpt.com
 45.155.204.190 sora.chatgpt.com sora.com videos.openai.com ios.chat.openai.com cdn.auth0.com files.oaiusercontent.com
 #Microsoft\n45.155.204.190 copilot.microsoft.com sydney.bing.com edgeservices.bing.com rewards.bing.com
 45.155.204.190 xsts.auth.xboxlive.com xgpuwebf2p.gssv-play-prod.xboxlive.com xgpuweb.gssv-play-prod.xboxlive.com
@@ -87,7 +138,7 @@ AI="#Gemini\n45.155.204.190 gemini.google.com\n#Grok\n45.155.204.190 grok.com ac
 45.155.204.190 write-free.www.deepl.com experimentation.deepl.com experimentation-grpc.deepl.com ita-free.app.deepl.com
 45.155.204.190 ott.deepl.com api-free.deepl.com backend.deepl.com clearance.deepl.com errortracking.deepl.com
 45.155.204.190 oneshot-free.www.deepl.com checkout.www.deepl.com gtm.deepl.com auth.deepl.com shield.deepl.com
-#Claude\n45.155.204.190 claude.ai console.anthropic.com api.anthropic.com
+#Claude\n45.155.204.190 claude.ai console.anthropic.com
 #Trae.ai\n45.155.204.190 trae-api-sg.mchost.guru api.trae.ai api-sg-central.trae.ai api16-normal-alisg.mchost.guru
 #Windsurf\n45.155.204.190 windsurf.com codeium.com server.codeium.com web-backend.codeium.com  marketplace.windsurf.com
 45.155.204.190 unleash.codeium.com inference.codeium.com windsurf-stable.codeium.com
@@ -128,7 +179,7 @@ hosts_enabled() { if grep -q "### dns.malw.link" /etc/hosts; then hosts_echo="Ma
 elif grep -q "### geohide.ru: hosts file" /etc/hosts; then if grep -q "^# Регион серверов: US$" /etc/hosts; then hosts_echo="GeoHide US"; elif grep -q "^# Регион серверов: EU$" /etc/hosts
 then hosts_echo="GeoHide EU"; elif grep -q "^# Регион серверов: RU$" /etc/hosts; then hosts_echo="GeoHide RU"; else hosts_echo="GeoHide"; fi; return 0
 elif grep -q "45.155.204.190\|instagram.com\|rutor.info\|lib.rus.ec\|ntc.party\|twitch.tv\|web.telegram.org\|www.spotify.com\|store.supercell.com\|raw.githubusercontent.com\|lkfl2.nalog.ru" /etc/hosts; then hosts_echo="добавлены"; return 0; fi; return 1; }
-hosts_add() { printf "%b\n" "$1" | while IFS= read -r L; do grep -qxF "$L" /etc/hosts || echo "$L" >> /etc/hosts; done; /etc/init.d/dnsmasq restart >/dev/null 2>&1; }; D() { printf '%b' "$(printf '%s' "$1" | sed 's/../\\x&/g')"; }
+hosts_add() { printf "%b\n" "$1" | while IFS= read -r L; do grep -qxF "$L" /etc/hosts || echo "$L" >> /etc/hosts; done; /etc/init.d/dnsmasq restart >/dev/null 2>&1; }
 ZAPRET_RESTART () { chmod +x /opt/zapret/sync_config.sh; /opt/zapret/sync_config.sh; /etc/init.d/zapret restart >/dev/null 2>&1; sleep 1; }
 start_test_trap() { mkdir -p "$TMP_SF"; rm -f "$TEST_STOP_FLAG"; echo -e "\nCtrl+C - ${YELLOW}остановить тестирование${NC}"; trap 'touch "$TEST_STOP_FLAG" 2>/dev/null' INT; }
 stop_test_trap() { trap - INT; rm -f "$TEST_STOP_FLAG"; }
@@ -139,8 +190,7 @@ kill_pid_tree() { local pid="$1"; [ -n "$pid" ] || return 0; local ch; ch=$(cat 
 kill_bg_jobs() { local pf="$1"; [ -s "$pf" ] || return 0; while IFS= read -r pid; do [ -n "$pid" ] && kill_pid_tree "$pid"; done < "$pf"; wait 2>/dev/null; }
 PAUSE() { echo -ne "Нажмите Enter..."; read dummy; }; BACKUP_DIR="/opt/zapret_backup"; DATE_FILE="$BACKUP_DIR/date_backup.txt"
 BIN_PATH_GO="/usr/bin/tg-ws-proxy-go"; INIT_PATH_GO="/etc/init.d/tg-ws-proxy-go"; BIN_PATH_RS="/usr/bin/tg-ws-proxy-rs"; INIT_PATH_RS="/etc/init.d/tg-ws-proxy-rs"
-X1="68747470733a2f2f7767636c692e76657263656c2e617070"; X2="68747470733a2f2f73616e74612d61746d6f2e72752f776172702f776172702e706870"
-REPO="xyzmean/splify"; WARP_EP="engage.cloudflareclient.com:4500"; WARP_IFACE="warp0"; TMP_SPL="/tmp/splify"; S101="$(D "$X1")"; S102="$(D "$X2")"; W1="$S101"; II="$S102"
+REPO="xyzmean/splify"; WARP_EP="engage.cloudflareclient.com:4500"; WARP_IFACE="warp0"; TMP_SPL="/tmp/splify"
 AWG_JC=4; AWG_JMIN=40; AWG_JMAX=70; AWG_H1=1; AWG_H2=2; AWG_H3=3; AWG_H4=4; AWG_S1=0; AWG_S2=0; AWG_JMAX=70; AWG_H1=1; AWG_H2=2; AWG_H3=3; AWG_H4=4; AWG_S1=0; AWG_S2=0
 AWG_I1="<b 0xce000000010897a297ecc34cd6dd000044d0ec2e2e1ea2991f467ace4222129b5a098823784694b4897b9986ae0b7280135fa85e196d9ad980b150122129ce2a9379531b0fd3e871ca5fdb883c369832f730e272d7b8b74f393f9f0fa43f11e510ecb2219a52984410c204cf875585340c62238e14ad04dff382f2c200e0ee22fe743b9c6b8b043121c5710ec289f471c91ee414fca8b8be8419ae8ce7ffc53837f6ade262891895f3f4cecd31bc93ac5599e18e4f01b472362b8056c3172b513051f8322d1062997ef4a383b01706598d08d48c221d30e74c7ce000cdad36b706b1bf9b0607c32ec4b3203a4ee21ab64df336212b9758280803fcab14933b0e7ee1e04a7becce3e2633f4852585c567894a5f9efe9706a151b615856647e8b7dba69ab357b3982f554549bef9256111b2d67afde0b496f16962d4957ff654232aa9e845b61463908309cfd9de0a6abf5f425f577d7e5f6440652aa8da5f73588e82e9470f3b21b27b28c649506ae1a7f5f15b876f56abc4615f49911549b9bb39dd804fde182bd2dcec0c33bad9b138ca07d4a4a1650a2c2686acea05727e2a78962a840ae428f55627516e73c83dd8893b02358e81b524b4d99fda6df52b3a8d7a5291326e7ac9d773c5b43b8444554ef5aea104a738ed650aa979674bbed38da58ac29d87c29d387d80b526065baeb073ce65f075ccb56e47533aef357dceaa8293a523c5f6f790be90e4731123d3c6152a70576e90b4ab5bc5ead01576c68ab633ff7d36dcde2a0b2c68897e1acfc4d6483aaaeb635dd63c96b2b6a7a2bfe042f6aed82e5363aa850aace12ee3b1a93f30d8ab9537df483152a5527faca21efc9981b304f11fc95336f5b9637b174c5a0659e2b22e159a9fed4b8e93047371175b1d6d9cc8ab745f3b2281537d1c75fb9451871864efa5d184c38c185fd203de206751b92620f7c369e031d2041e152040920ac2c5ab5340bfc9d0561176abf10a147287ea90758575ac6a9f5ac9f390d0d5b23ee12af583383d994e22c0cf42383834bcd3ada1b3825a0664d8f3fb678261d57601ddf94a8a68a7c273a18c08aa99c7ad8c6c42eab67718843597ec9930457359dfdfbce024afc2dcf9348579a57d8d3490b2fa99f278f1c37d87dad9b221acd575192ffae1784f8e60ec7cee4068b6b988f0433d96d6a1b1865f4e155e9fe020279f434f3bf1bd117b717b92f6cd1cc9bea7d45978bcc3f24bda631a36910110a6ec06da35f8966c9279d130347594f13e9e07514fa370754d1424c0a1545c5070ef9fb2acd14233e8a50bfc5978b5bdf8bc1714731f798d21e2004117c61f2989dd44f0cf027b27d4019e81ed4b5c31db347c4a3a4d85048d7093cf16753d7b0d15e078f5c7a5205dc2f87e330a1f716738dce1c6180e9d02869b5546f1c4d2748f8c90d9693cba4e0079297d22fd61402dea32ff0eb69ebd65a5d0b687d87e3a8b2c42b648aa723c7c7daf37abcc4bb85caea2ee8f55bec20e913b3324ab8f5c3304f820d42ad1b9f2ffc1a3af9927136b4419e1e579ab4c2ae3c776d293d397d575df181e6cae0a4ada5d67ecea171cca3288d57c7bbdaee3befe745fb7d634f70386d873b90c4d6c6596bb65af68f9e5121e67ebf0d89d3c909ceedfb32ce9575a7758ff080724e1ab5d5f43074ecb53a479af21ed03d7b6899c36631c0166f9d47e5e1d4528a5d3d3f744029c4b1c190cbfbad06f5f83f7ad0429fa9a2719c56ffe3783460e166de2d8>"
 AUTO_RESULTS="/opt/zapret/tmp/results_auto.txt"; AUTO_BACK="/opt/zapret/tmp/zapret_auto_back.txt"; AUTO_LOG="/opt/zapret/tmp/auto_best.log"; AUTO_CRON_CMD="/usr/bin/zmsA --auto-best"
@@ -416,17 +466,52 @@ then _best=$(sort -n "$_pings" | head -n 1); _best_ping=$(echo "$_best" | awk '{
 WARP_EP="${_best_ip}:4500"; else WARP_EP="engage.cloudflareclient.com:4500"; echo -e "\n${CYAN}Подбор не удался!\nИспользуем ${NC}endpoint${CYAN}:${NC} $WARP_EP"; fi; }
 choose_endpoint() { echo -e "\n${MAGENTA}Меню выбора endpoint${NC}"; echo -e "${CYAN}1) ${GREEN}Использовать${NC} engage.cloudflareclient.com:4500\n${CYAN}2) ${GREEN}Подобрать ${NC}endpoint${GREEN} автоматически${NC}\n"
 echo -en "${YELLOW}Выберите пункт: ${NC}"; read -r choiceWRP; case "$choiceWRP" in 2) find_best_endpoint ;; *) WARP_EP="engage.cloudflareclient.com:4500"; echo -e "\n${CYAN}Используем: ${NC}$WARP_EP" ;; esac; }
-register_request() { curl -fsSL --max-time 30 -X POST "${W1%/}/api/reg" -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"key\":\"$PUB\",\"install_id\":\"\",\"fcm_token\":\"\",\"model\":\"PC\",\"locale\":\"en_US\",\"tos\":\"$TOS\",\"type\":\"Android\"}" -o "$REG" >/dev/null 2>&1; }
-register_warp() { [ -d "$TMP_SPL" ] || mkdir -p "$TMP_SPL"; REG="$TMP_SPL/reg.json"; rm -f "$REG"; echo -e "\n${MAGENTA}Генерируем WARP${NC}"; echo -e "${CYAN}Используем основной метод${NC}"; if curl -fsSL --max-time 30 "$II" -o "$REG" 2>/dev/null && grep -q '"public_key"' "$REG"; then
-PRIV=$(grep -o '"key"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG" | head -n1 | sed 's/.*:[[:space:]]*"//;s/"$//'); WARP_PEER=$(grep -o '"public_key"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG" | head -n1 | sed 's/.*:[[:space:]]*"//;s/"$//')
-WARP_V4=$(grep -o '"v4"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG" | sed -n '2p' | sed 's/.*:[[:space:]]*"//;s/"$//'); WARP_V6=$(grep -o '"v6"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG" | sed -n '2p' | sed 's/.*:[[:space:]]*"//;s/"$//')
-if [ -n "$PRIV" ] && [ -n "$WARP_PEER" ] && [ -n "$WARP_V4" ]; then echo -e "WARP ${GREEN}сгенерирован!${NC}"; return 0; fi; echo -e "${YELLOW}Основной метод вернул неполные данные, переключаемся на запасной${NC}"; else echo -e "${YELLOW}Основной метод недоступен, переключаемся на запасной${NC}"; fi
-ZAVISIM || return 1; if command -v awg >/dev/null 2>&1; then GEN=awg; else GEN=wg; fi; PRIV="$("$GEN" genkey 2>/dev/null)"; PUB="$(printf '%s\n' "$PRIV" | "$GEN" pubkey 2>/dev/null)"
-TOS="$(date -u +%Y-%m-%dT%H:%M:%S.000000000Z)"; echo -e "${CYAN}Регистрируем устройство${NC}"; if register_request && jq -e '.config.peers[0].public_key' "$REG" >/dev/null 2>&1; then echo -e "${CYAN}Используем основной сервер${NC}"; else echo -e "${CYAN}Используем резервный сервер${NC}"
-if ! curl -fsSL --max-time 60 "$II" -o "$REG" >/dev/null 2>&1; then echo -e "${RED}Не удалось получить WARP${NC}"; PAUSE; return 1; fi; if ! jq -e '.result.config.peers[0].public_key' "$REG" >/dev/null 2>&1; then echo -e "${RED}Резервный источник вернул неверный формат${NC}"; PAUSE; return 1; fi
-PRIV="$(jq -r '.result.key' "$REG")"; WARP_PEER="$(jq -r '.result.config.peers[0].public_key' "$REG")"; WARP_V4="$(jq -r '.result.config.interface.addresses.v4' "$REG")"; WARP_V6="$(jq -r '.result.config.interface.addresses.v6 // empty' "$REG")"; fi; if [ -z "$WARP_PEER" ]
-then WARP_PEER="$(jq -r '.config.peers[0].public_key' "$REG")"; WARP_V4="$(jq -r '.config.interface.addresses.v4' "$REG")"; WARP_V6="$(jq -r '.config.interface.addresses.v6 // empty' "$REG")"; fi
-[ -n "$WARP_PEER" ] && [ "$WARP_PEER" != "null" ] || { echo -e "${RED}Нет peer public_key${NC}"; PAUSE; return 1; }; [ -n "$WARP_V4" ] && [ "$WARP_V4" != "null" ] || { echo -e "${RED}Нет IPv4${NC}"; PAUSE; return 1; }; echo -e "WARP ${GREEN}сгенерирован!${NC}"; }
+register_warp() {
+	[ -d "$TMP_SPL" ] || mkdir -p "$TMP_SPL"
+	REG="$TMP_SPL/reg.json"
+	ZAVISIM || return 1
+	if command -v awg >/dev/null 2>&1; then GEN=awg; else GEN=wg; fi
+	command -v "$GEN" >/dev/null 2>&1 || { echo -e "${RED}Нет awg или wg для создания ключа на роутере${NC}"; PAUSE; return 1; }
+	PRIV="$("$GEN" genkey 2>/dev/null)"
+	PUB="$(printf '%s\n' "$PRIV" | "$GEN" pubkey 2>/dev/null)"
+	[ -n "$PRIV" ] && [ -n "$PUB" ] || { echo -e "${RED}Не удалось создать ключ на роутере${NC}"; PAUSE; return 1; }
+	TOS="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+	WARP_CF_PEER="bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+	ok=0
+	for api in \
+		https://api.cloudflareclient.com/v0a4005/reg \
+		https://api.cloudflareclient.com/v0i1909051800/reg \
+		https://api.cloudflareclient.com/v0a2158/reg \
+		https://api.cloudflareclient.com/v0a1922/reg \
+		https://edge-client-api.vercel.app/v0a4005/reg
+	do
+		rm -f "$REG"
+		code=$(curl -s --connect-timeout 6 --max-time 25 -X POST \
+			-H 'Content-Type: application/json' -H 'User-Agent: okhttp/3.12.1' -H 'CF-Client-Version: a-6.11-2223' \
+			-d "{\"key\":\"$PUB\",\"install_id\":\"\",\"fcm_token\":\"\",\"tos\":\"$TOS\",\"type\":\"Android\",\"model\":\"\",\"locale\":\"en_US\"}" \
+			-o "$REG" -w '%{http_code}' "$api" 2>/dev/null) || code=""
+		case "$code" in 200|201) ;; *) continue ;; esac
+		WARP_PEER="$(jq -r '.config.peers[0].public_key // .result.config.peers[0].public_key // empty' "$REG" 2>/dev/null)"
+		WARP_V4="$(jq -r '.config.interface.addresses.v4 // .result.config.interface.addresses.v4 // empty' "$REG" 2>/dev/null)"
+		WARP_V6="$(jq -r '.config.interface.addresses.v6 // .result.config.interface.addresses.v6 // empty' "$REG" 2>/dev/null)"
+		id="$(jq -r '.id // .result.id // empty' "$REG" 2>/dev/null)"
+		tok="$(jq -r '.token // .result.token // empty' "$REG" 2>/dev/null)"
+		[ "$WARP_PEER" = "$WARP_CF_PEER" ] && [ -n "$WARP_V4" ] && [ "$WARP_V4" != null ] || continue
+		if [ -n "$id" ] && [ -n "$tok" ] && [ "$id" != null ] && [ "$tok" != null ]; then
+			pcode=$(curl -s --connect-timeout 6 --max-time 15 -o /dev/null -w '%{http_code}' -X PATCH \
+				-H 'Content-Type: application/json' -H 'User-Agent: okhttp/3.12.1' -H 'CF-Client-Version: a-6.11-2223' \
+				-H "Authorization: Bearer $tok" -d '{"warp_enabled":true}' "${api}/$id" 2>/dev/null) || pcode=""
+			case "$pcode" in 2*) ;; *) continue ;; esac
+		fi
+		ok=1
+		break
+	done
+	rm -f "$REG"
+	if [ "$ok" != 1 ]; then echo -e "${RED}Не удалось зарегистрировать WARP. Приватный ключ с чужого генератора больше не берётся.${NC}"; PAUSE; return 1; fi
+	[ "$WARP_V6" = null ] && WARP_V6=""
+	echo -e "WARP ${GREEN}сгенерирован на роутере!${NC}"
+}
+
 WARP_TO_ROOT() { printf '%s\n' "[Interface]" "PrivateKey = $PRIV" "Address = $WARP_V4${WARP_V6:+, $WARP_V6}" "DNS = 9.9.9.9" "MTU = 1280" "S1 = $AWG_S1" "S2 = $AWG_S2" "Jc = $AWG_JC" "Jmin = $AWG_JMIN" "Jmax = $AWG_JMAX" "H1 = $AWG_H1" "H2 = $AWG_H2" "H3 = $AWG_H3" "H4 = $AWG_H4" "I1 = $AWG_I1" "" "[Peer]" "PublicKey = $WARP_PEER" "AllowedIPs = 0.0.0.0/0, ::/0" "Endpoint = $WARP_EP" "PersistentKeepalive = 25" > /root/WARP.conf; echo -e "${YELLOW}Файл ${NC}WARP${YELLOW} сохранён в ${NC}/root/WARP.conf"; }
 SPL_V_VER() { if [ "$PKG_IS_APK" -eq 1 ]; then SPL_INST_VER=$(awk '$0=="P:splify"{f=1} f&&/^V:/{v=substr($0,3);sub(/-r[0-9]+$/,"",v);print v;exit}' /lib/apk/db/installed); else SPL_INST_VER=$(opkg list-installed splify 2>/dev/null | awk '{sub(/(-r[0-9]+|-[0-9]+)$/, "", $3); print $3}'); fi; }
 uget() { uci -q get "$1" 2>/dev/null; }
@@ -946,7 +1031,9 @@ echo -e "Zapret Manager ${GREEN}для ${NC}WEB ${GREEN}+ ${NC}LuCI ${GREEN}уд
 else
 [ "$ZML_ACT" = update ] && echo -e "\n${MAGENTA}Обновляем Zapret Manager для WEB + LuCI${NC} ${ZML_INST:-?} → $ZML_LAST"
 rm -f "$ZM_LUCI_CACHE"
-sh <(wget -qO - "$ZM_LUCI_URL")
+if [ -r /opt/zapret-manager/ZapretManager_LuCI.sh ]; then sh /opt/zapret-manager/ZapretManager_LuCI.sh
+elif [ -r "$(dirname "$0")/ZapretManager_LuCI.sh" ]; then sh "$(dirname "$0")/ZapretManager_LuCI.sh"
+else echo -e "${RED}Локальный установщик панели не найден. Загрузка скрипта из сети отключена.${NC}"; fi
 fi
 PAUSE
 }
@@ -998,10 +1085,7 @@ grep -q '104\.25\.158\.178 finland[0-9]\{5\}\.discord\.media' /etc/hosts && echo
 echo -ne "${CYAN}Enter) ${GREEN}Вернуться в предыдущее меню${NC}\n\n${YELLOW}Выберите пункт:${NC} ";read -r c; case "$c" in 0) toggle_block "$NALOG";; 1) toggle_block "$RUTOR";; 2) toggle_block "$NTC";; 3) toggle_block "$INSTAGRAM";;
 4) toggle_block "$LIBRUSEC";; 5) toggle_block "$AI";; 6) toggle_block "$TWCH";; 7) toggle_block "$TGWeb";; 8) toggle_block "$SPFY";; 9) toggle_block "$SPFYEXT";; 10) toggle_block "$SCell";; 11) toggle_block "$GITH_RAW";; 12) toggle_block "$GITH";;
 13) toggle_block "$USoft";; 14) toggle_block "$TAPEop";; 15) toggle_block "$ROBLOXhost";; 16) toggle_block "$updDIShost";; 17) toggle_all;; 18) menu_GEO_HOSTS;;
-19) echo -e "\n${MAGENTA}Заменяем hosts на Mafioznik hosts${NC}"; wget -qO /etc/hosts ${GH_RAW}/StressOzz/Zapret-Manager/refs/heads/main/files/hosts_mafioznik.txt >/dev/null 2>&1 || { echo -e "\n${RED}Не удалось скачать файл hosts${NC}\n"; PAUSE; }
-/etc/init.d/dnsmasq restart >/dev/null 2>&1; echo -e "hosts ${GREEN}заменён на ${NC}Mafioznik hosts${GREEN}!${NC}\n"; PAUSE;; 20) echo -e "\n${MAGENTA}Заменяем hosts на Malw.link hosts${NC}"
-wget -qO /etc/hosts ${GH_RAW}/StressOzz/Zapret-Manager/refs/heads/main/files/hosts_malw.link.txt >/dev/null 2>&1 || { echo -e "\n${RED}Не удалось скачать файл hosts${NC}\n"; PAUSE; }
-/etc/init.d/dnsmasq restart >/dev/null 2>&1; echo -e "hosts ${GREEN}заменён на ${NC}Malw.link hosts${GREEN}!${NC}\n"; PAUSE;; 
+19) apply_bundled_hosts hosts_mafioznik.txt "Mafioznik";; 20) apply_bundled_hosts hosts_malw.link.txt "Malw.link";; 
 21) toggle_finland_hosts;;
 22) hosts_reset;; *) break;; esac; done; }
 status_block() { local line; while IFS= read -r line; do [ -z "$line" ] && continue; grep -Fxq "$line" "$HOSTS_FILE" || return 1; done <<EOF
@@ -1018,24 +1102,11 @@ menu_GEO_HOSTS() {
         echo -ne "${YELLOW}Выберите пункт:${NC} "
         read -r c
         case "$c" in
-            1) GEO_FILE="$GH_RAW/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts"; GEO_NAME="RU";;
-            2) GEO_FILE="$GH_RAW/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/eu/hosts"; GEO_NAME="EU";;
-            3) GEO_FILE="$GH_RAW/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/us/hosts"; GEO_NAME="US";;
+            1) apply_bundled_hosts GeoHide_hosts_RU "GeoHide RU"; return ;;
+            2) apply_bundled_hosts GeoHide_hosts_EU "GeoHide EU"; return ;;
+            3) apply_bundled_hosts GeoHide_hosts_US "GeoHide US"; return ;;
             *) break;;
         esac
-        echo -e "\n${MAGENTA}Меняем hosts на GeoHide ${GEO_NAME} hosts${NC}"
-        GEO_TMP="/tmp/GeoHide_hosts"
-        if wget -q -U "Mozilla/5.0" -O "$GEO_TMP" "$GEO_FILE" >/dev/null 2>&1 &&
-           [ -s "$GEO_TMP" ]; then
-            mv "$GEO_TMP" /etc/hosts
-            /etc/init.d/dnsmasq restart >/dev/null 2>&1
-            echo -e "hosts ${GREEN}заменён на ${NC}GeoHide ${GEO_NAME} hosts${GREEN}!${NC}\n"
-        else
-            rm -f "$GEO_TMP"
-            echo -e "\n${RED}Не удалось скачать GeoHide ${GEO_NAME} hosts${NC}\n"
-        fi
-        PAUSE
-        return
     done
 }
 # ==========================================
@@ -1141,9 +1212,7 @@ echo -e "\n${GREEN}===== Настройки DNS over HTTPS =====${NC}"; [ -f /et
 echo -e "\n${GREEN}===== Проверка GitHub =====${NC}"; RATE=$(curl -s https://api.github.com/rate_limit | grep '"remaining"' | head -1 | awk '{print $2}' | tr -d ,)
 [ -z "$RATE" ] && RATE_OUT="${RED}N/A${NC}" || RATE_OUT=$([ "$RATE" -eq 0 ] && echo -e "${RED}0${NC}" || echo -e "${GREEN}$RATE${NC}")
 echo -n "API: "; curl -Is --connect-timeout 3 https://api.github.com >/dev/null 2>&1 && echo -e "${GREEN}ok${NC} | Limit: $RATE_OUT" || echo -e "${RED}fail${NC} | Limit: $RATE_OUT"; fi
-echo -e "\n${GREEN}===== Проверка IPv4 / IPv6 =====${NC}"; PROVIDER=$(curl -fsSL --connect-timeout 2 --max-time 3 "https://ipinfo.io/$IP/org" 2>/dev/null | sed -E 's/AS[0-9]+ ?//; s/\b(OJSC|PJSC|IROKO|JSC|LLC|Inc\.?|Ltd\.?)\b//g; s/[.,-]//g; s/  +/ /g; s/^ +| +$//g')
-[ -z "$PROVIDER" ] && PROVIDER=$(curl -fsSL --connect-timeout 2 --max-time 3 "http://ip-api.com/line/?fields=as" 2>/dev/null | sed -E 's/AS[0-9]+ ?//; s/\b(OJSC|PJSC|IROKO|JSC|LLC|Inc\.?|Ltd\.?)\b//g; s/[.,-]//g; s/  +/ /g; s/^ +| +$//g')
-[ -z "$PROVIDER" ] && PROVIDER=$(curl -fsSL --connect-timeout 2 --max-time 3 "https://ipwho.is/$IP" 2>/dev/null | sed -E 's/.*"isp":"([^"]+)".*/\1/' | sed -E 's/\b(OJSC|PJSC|IROKO|JSC|LLC|Inc\.?|Ltd\.?)\b//Ig' | sed -E 's/[.,-]//g; s/  +/ /g; s/^ +| +$//g'); [ -n "$PROVIDER" ] && echo "Провайдер: $PROVIDER"
+echo -e "\n${GREEN}===== Проверка IPv4 / IPv6 =====${NC}"
 echo -n "Google IPv4: "; time=$(ping -4 -c 1 -W 2 google.com 2>/dev/null | grep 'time=' | awk -F'time=' '{print $2}' | awk '{print $1}'); if [ -n "$time" ]; then echo -e "${GREEN}ok ($time ms)${NC}"; else echo -e "${RED}fail${NC}"; fi
 echo -n "Google IPv6: "; time=$(ping -6 -c 1 -W 2 google.com 2>/dev/null | grep 'time=' | awk -F'time=' '{print $2}' | awk '{print $1}'); if [ -n "$time" ]; then echo -e "${GREEN}ok ($time ms)${NC}"; else echo -e "${RED}fail${NC}"; fi
 echo -e "\n${GREEN}===== Настройки Zapret =====${NC}"; INFO_ZPR; if [ -f /etc/init.d/zapret ]; then TCP_VAL=$(grep -E "^[[:space:]]*option NFQWS_PORTS_TCP[[:space:]]+'" "$CONF" | sed "s/.*'\(.*\)'.*/\1/")
@@ -1230,49 +1299,9 @@ get_TGWS_domain() {
 
 install_update_TGWS() {
     echo -e "\n${MAGENTA}Устанавливаем sTGWS${NC}"
-    echo -e "${CYAN}Запускаем оригинальный установщик${NC}"
-
-    if ! wget -q -U "Mozilla/5.0" -O /tmp/tgws.sh "https://gitlab.com/xyzmean/brb/-/raw/main/install-tgws.sh"; then
-        echo -e "\n${RED}Не удалось скачать установщик sTGWS!${NC}\n"
-        rm -f /tmp/tgws.sh
-        PAUSE
-        return
-    fi
-
-    sh /tmp/tgws.sh >/dev/null 2>&1
-    rm -f /tmp/tgws.sh
-    
-
-    if [ ! -x /etc/init.d/tgws ]; then
-        echo -e "\n${RED}Установка sTGWS не удалась!${NC}\n"
-        PAUSE
-        return  
-    fi
-
-    echo -e "${CYAN}Подбираем домен${NC}"
-    /etc/init.d/tgws enable >/dev/null 2>&1    
-    /etc/init.d/tgws restart >/dev/null 2>&1
-    echo -ne "${YELLOW}Подождите...${NC}\n"
-    tgws pick >/dev/null 2>&1
-    TGWS_STARTED=0
-
-    for i in $(seq 1 20); do
-        if [ -n "$(tgws status 2>/dev/null)" ]; then
-            TGWS_STARTED=1
-            break
-        fi
-        sleep 5
-    done
-
-    if [ "$TGWS_STARTED" = "1" ]; then
-        get_TGWS_domain
-        echo -e "${CYAN}Используем домен: ${NC}${TGWS_DOMAIN:-не определён}"
-        echo -e "sTGWS ${GREEN}установлен и запущен!${NC}\n"
-    else
-        echo -e "\n${RED}Не удалось подобрать домен!${NC}\n"
-    fi
-
+    echo -e "${RED}Удалённый установщик install-tgws.sh больше не скачивается и не запускается.${NC}\n"
     PAUSE
+    return
 }
 
 remove_TGWS() {
@@ -1710,8 +1739,8 @@ SUB_URL_ESC=$(printf '%s' "$SUB_URL" | sed 's/[&|]/\\&/g'); if grep -q "^[[:spac
 if awk -v url="$SUB_URL_ESC" 'BEGIN { updated = 0 } { if ($0 ~ /^[[:space:]]*type:[[:space:]]*http[[:space:]]*$/) { print; getline; if ($0 ~ /^[[:space:]]*url:[[:space:]]*"/) { sub(/url:[[:space:]]*".*"/, "url: \"" url "\""); updated = 1 } print; next } print } END { exit (updated ? 0 : 1) }' "$CONFIGMIX" > "$TMP_FILE"
 then mv "$TMP_FILE" "$CONFIGMIX"; /etc/init.d/mihomo reload >/dev/null 2>&1; /etc/init.d/mihomo restart >/dev/null 2>&1; echo -e "\n${GREEN}Подписка успешно обновлена!${NC}\n"; PAUSE; rm -f "$TMP_FILE"; return; else rm -f "$TMP_FILE"; echo -e "\n${YELLOW}Не удалось обновить URL в конфиге, создаем новый конфиг${NC}\n"; fi; fi
 
-# printf '%s\n' 'mode: rule' 'ipv6: false' 'mixed-port: 7890' 'log-level: error' 'allow-lan: false' 'unified-delay: true' 'tcp-concurrent: false' 'find-process-mode: off' 'external-controller: 0.0.0.0:9090' 'external-ui: ./ui' 'routing-mark: 2' 'profile:' '  store-selected: true' '  store-fake-ip: true' '  tracing: true' 'sniffer:' '  enable: true' '  force-dns-mapping: true' '  parse-pure-ip: true' '  sniff:' '    HTTP:' '      ports: [80]' '      override-destination: true' '    TLS:' '      ports: [443, 8443]' '    QUIC:' '      ports: [443, 8443]' '  skip-domain:' '    - Mijia Cloud' '    - +.lan' '    - +.local' '    - +.msftconnecttest.com' '    - +.msftncsi.com' '    - +.3gppnetwork.org' '    - +.openwrt.org' '    - +.vsean.net' '    - cudy.net' '' 'hosts:' '  ntc.party: 130.255.77.28' '' 'proxies:' '' '  - name: "Домашний интернет"' '    type: direct' '' 'proxy-providers:' '' '  Подписка:' '    type: http' "    url: \"$SUB_URL\"" '    path: ./proxy-providers/sub.yaml' '    interval: 86400' '    health-check:' '      enable: true' '      url: http://www.gstatic.com/generate_204' '      interval: 300' '      timeout: 5000' '      lazy: true' '' 'proxy-groups:' '' '  - name: "Сервер для YouTube"' '    type: select' '    icon: https://www.clashverge.dev/assets/icons/youtube.svg' '    proxies:' '      - "Домашний интернет"' '    use:' '      - "Подписка"' '' '  - name: "Сервер для остального трафика"' '    type: select' '    icon: https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.3/assets/svg/1f310.svg' '    use:' '      - "Подписка"' '' 'rule-providers:' '' '  youtube:' '    type: http' '    format: yaml' '    behavior: classical' '    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml"' '    path: ./rule-providers/youtube-list.yaml' '    interval: 86400' '' 'rules:' '  - RULE-SET,youtube,Сервер для YouTube' '  - MATCH,Сервер для остального трафика' > "$CONFIGMIX"
-printf '%s\n' 'mixed-port: 7890' 'allow-lan: false' 'tcp-concurrent: true' 'mode: rule' 'log-level: info' 'ipv6: false' 'external-controller: 0.0.0.0:9090' 'external-ui: ui' 'secret:' 'unified-delay: true' 'profile:' '  store-selected: true' '  store-fake-ip: true' '' 'proxy-groups:' '  - name: GLOBAL' '    type: select' '    proxies:' '      - DIRECT' '    use:' '      - Подписка' '' '  - name: YouTube' '    type: select' '    proxies:' '      - DIRECT' '    use:' '      - Подписка' '' 'rules:' '  - RULE-SET,youtube,YouTube' '  - MATCH,GLOBAL' '' 'proxy-providers:' '  Подписка:' '    type: http' '    proxy: DIRECT' '    header:' '      x-hwid:' '        - b6e2d53b1b2c8618719f42fb95ab1e43' "    url: \"$SUB_URL\"" '    interval: 43200' '    health-check:' '      enable: true' '      interval: 300' '      url: "https://google.com/generate_204"' '      expected-status: 204' '' 'rule-providers:' '  youtube:' '    type: http' '    format: yaml' '    behavior: classical' '    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml"' '    path: ./rule-providers/youtube.yaml' '    interval: 86400' > "$CONFIGMIX"
+# printf '%s\n' 'mode: rule' 'ipv6: false' 'mixed-port: 7890' 'log-level: error' 'allow-lan: false' 'unified-delay: true' 'tcp-concurrent: false' 'find-process-mode: off' 'external-controller: 127.0.0.1:9090' 'external-ui: ./ui' 'routing-mark: 2' 'profile:' '  store-selected: true' '  store-fake-ip: true' '  tracing: true' 'sniffer:' '  enable: true' '  force-dns-mapping: true' '  parse-pure-ip: true' '  sniff:' '    HTTP:' '      ports: [80]' '      override-destination: true' '    TLS:' '      ports: [443, 8443]' '    QUIC:' '      ports: [443, 8443]' '  skip-domain:' '    - Mijia Cloud' '    - +.lan' '    - +.local' '    - +.msftconnecttest.com' '    - +.msftncsi.com' '    - +.3gppnetwork.org' '    - +.openwrt.org' '    - +.vsean.net' '    - cudy.net' '' 'hosts:' '  ntc.party: 130.255.77.28' '' 'proxies:' '' '  - name: "Домашний интернет"' '    type: direct' '' 'proxy-providers:' '' '  Подписка:' '    type: http' "    url: \"$SUB_URL\"" '    path: ./proxy-providers/sub.yaml' '    interval: 86400' '    health-check:' '      enable: true' '      url: http://www.gstatic.com/generate_204' '      interval: 300' '      timeout: 5000' '      lazy: true' '' 'proxy-groups:' '' '  - name: "Сервер для YouTube"' '    type: select' '    icon: https://www.clashverge.dev/assets/icons/youtube.svg' '    proxies:' '      - "Домашний интернет"' '    use:' '      - "Подписка"' '' '  - name: "Сервер для остального трафика"' '    type: select' '    icon: https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.3/assets/svg/1f310.svg' '    use:' '      - "Подписка"' '' 'rule-providers:' '' '  youtube:' '    type: http' '    format: yaml' '    behavior: classical' '    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml"' '    path: ./rule-providers/youtube-list.yaml' '    interval: 86400' '' 'rules:' '  - RULE-SET,youtube,Сервер для YouTube' '  - MATCH,Сервер для остального трафика' > "$CONFIGMIX"
+printf '%s\n' 'mixed-port: 7890' 'allow-lan: false' 'tcp-concurrent: true' 'mode: rule' 'log-level: info' 'ipv6: false' 'external-controller: 127.0.0.1:9090' 'external-ui: ui' "secret: $(zm_mihomo_secret)" 'unified-delay: true' 'profile:' '  store-selected: true' '  store-fake-ip: true' '' 'proxy-groups:' '  - name: GLOBAL' '    type: select' '    proxies:' '      - DIRECT' '    use:' '      - Подписка' '' '  - name: YouTube' '    type: select' '    proxies:' '      - DIRECT' '    use:' '      - Подписка' '' 'rules:' '  - RULE-SET,youtube,YouTube' '  - MATCH,GLOBAL' '' 'proxy-providers:' '  Подписка:' '    type: http' '    proxy: DIRECT' "    url: \"$SUB_URL\"" '    interval: 43200' '    health-check:' '      enable: true' '      interval: 300' '      url: "https://google.com/generate_204"' '      expected-status: 204' '' 'rule-providers:' '  youtube:' '    type: http' '    format: yaml' '    behavior: classical' '    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml"' '    path: ./rule-providers/youtube.yaml' '    interval: 86400' > "$CONFIGMIX"
 
 /etc/init.d/mihomo reload >/dev/null 2>&1; /etc/init.d/mihomo restart >/dev/null 2>&1; echo -e "\n${GREEN}Подписка успешно применена!${NC}\n"; PAUSE; }
 UI_INSTALL() { while true; do echo -e "\n${MAGENTA}Выбор панели для Mihomo${NC} "; echo -e "${CYAN}1) ${GREEN}Установить ${NC}Zashboard"; echo -e "${CYAN}2) ${GREEN}Установить ${NC}MetaCubeXD"
@@ -1802,9 +1831,9 @@ echo -e "\n${CYAN}1) ${GREEN}Установить ${NC}Mixomo"; echo -e "${CYAN}
 then echo -e "${CYAN}4) ${GREEN}Сменить ${NC}VPN${GREEN} подписку${NC}"; else echo -e "${CYAN}4) ${GREEN}Интегрировать ${NC}VPN${GREEN} подписку в ${NC}Mihomo${NC}"; fi; echo -e "${CYAN}5) ${GREEN}Сгенерировать ${NC}WARP"
 echo -e "${CYAN}6) ${GREEN}Интегрировать ${NC}/root/WARP.conf${GREEN} в ${NC}Mihomo"; echo -e "${CYAN}7) ${GREEN}Выбрать и установить панель для ${NC}Mihomo"; if grep -qF "/etc/init.d/mihomo restart" /etc/crontabs/root 2>/dev/null
 then echo -e "${CYAN}8) ${GREEN}Выключить автоперезапуск ${NC}Mihomo"; else echo -e "${CYAN}8) ${GREEN}Включить автоперезапуск ${NC}Mihomo"; fi; [ -n "$Magi_INSTALL_VER" ] && { [ "$Magi_INSTALL_VER" != "$MT_VERSION" ] && echo -e "${CYAN}9) ${GREEN}Обновить ${NC}MagiTrickle"; }
-echo -e "${CYAN}Enter) ${GREEN}Вернуться в предыдущее меню\n"; echo -ne "${YELLOW}Выберите пункт: ${NC}"; read choiceM; case "$choiceM" in 1) wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/refs/heads/main/files/Mixomo/mixomo_openwrt_install.sh | sh; PAUSE ;;
-2) wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/refs/heads/main/files/Mixomo/mixomo_openwrt_delete.sh | sh; if bt_installed && ! pkg_is_installed hev-socks5-tunnel; then echo -e "${CYAN}Возвращаем ${NC}hev-socks5-tunnel${CYAN} для ${NC}ByeTube"; $INSTALL hev-socks5-tunnel >/dev/null 2>&1; /etc/init.d/hev-socks5-tunnel disable >/dev/null 2>&1; /etc/init.d/hev-socks5-tunnel stop >/dev/null 2>&1; /etc/init.d/bytetube restart >/dev/null 2>&1; fi; sed -i "\|$CRON_CMD|d" "$CRON_FILE" >/dev/null 2>&1; /etc/init.d/cron restart >/dev/null 2>&1; echo -e "\n${YELLOW}Рекомендую сделать перезагрузку роутера!${NC}\n"; PAUSE ;;
-3) check_mihomo || continue; magitrickle_config ;; 4) check_mihomo || continue; PODPISKA ;; 5) register_warp || return 1; choose_endpoint || return 1; WARP_TO_ROOT; echo; PAUSE ;; 6) check_mihomo || continue; wget -q -O - ${GH_RAW}/StressOzz/Zapret-Manager/refs/heads/main/files/Mixomo/WARP_to_conf.sh | sh; echo; PAUSE ;;
+echo -e "${CYAN}Enter) ${GREEN}Вернуться в предыдущее меню\n"; echo -ne "${YELLOW}Выберите пункт: ${NC}"; read choiceM; case "$choiceM" in 1) run_bundled mixomo_openwrt_install.sh; PAUSE ;;
+2) run_bundled mixomo_openwrt_delete.sh; if bt_installed && ! pkg_is_installed hev-socks5-tunnel; then echo -e "${CYAN}Возвращаем ${NC}hev-socks5-tunnel${CYAN} для ${NC}ByeTube"; $INSTALL hev-socks5-tunnel >/dev/null 2>&1; /etc/init.d/hev-socks5-tunnel disable >/dev/null 2>&1; /etc/init.d/hev-socks5-tunnel stop >/dev/null 2>&1; /etc/init.d/bytetube restart >/dev/null 2>&1; fi; sed -i "\|$CRON_CMD|d" "$CRON_FILE" >/dev/null 2>&1; /etc/init.d/cron restart >/dev/null 2>&1; echo -e "\n${YELLOW}Рекомендую сделать перезагрузку роутера!${NC}\n"; PAUSE ;;
+3) check_mihomo || continue; magitrickle_config ;; 4) check_mihomo || continue; PODPISKA ;; 5) register_warp || return 1; choose_endpoint || return 1; WARP_TO_ROOT; echo; PAUSE ;; 6) check_mihomo || continue; run_bundled WARP_to_conf.sh; echo; PAUSE ;;
 7) check_mihomo || continue; UI_INSTALL ;; 8) check_mihomo || continue; MIXOMO_RESTART ;; 9) check_mihomo || continue; ARCH_MT=$(grep "^OPENWRT_ARCH=" /etc/os-release | cut -d'"' -f2); FILE_MT="/tmp/magitrickle.$RAZ"; URL_MT="${GH_MAIN}/MagiTrickle/MagiTrickle/releases/download/${MT_VERSION}/magitrickle_${MT_VERSION}-${SUF_MT}1_openwrt_${ARCH_MT}.$RAZ"
 echo -e "\n${MAGENTA}Обновляем MagiTrickle\n${CYAN}Скачиваем\n${NC}$URL_MT"; curl -Lf --connect-timeout 6 --retry 3 --retry-delay 1 -o "$FILE_MT" "$URL_MT" >/dev/null 2>&1 || { echo -e "\n${RED}Ошибка скачивания${NC}\n"; PAUSE; return 1; };  update_packages || return 1
 echo -e "${CYAN}Обновляем ${NC}MagiTrickle"; $INSTALL "$FILE_MT" >/dev/null 2>&1 || { echo -e "\n${RED}Ошибка установки${NC} $(basename "$URL_MT")\n"; rm -f "$FILE_MT"; PAUSE; return 1; }; /etc/init.d/magitrickle enable >/dev/null 2>&1; /etc/init.d/magitrickle restart >/dev/null 2>&1; echo -e "MagiTrickle ${GREEN}обновлён!${NC}\n"; rm -f "$FILE_MT"; PAUSE ;; *) return ;; esac; done; }
@@ -1985,7 +2014,7 @@ MENU_ZAPRET() {
         *) return ;; esac
     done
 }
-show_menu() { get_versions; get_doh_status; show_current_strategy; RKN_Check; mkdir -p "$TMP_SF"; CURR=$(curr_MIR); clear; echo -e "╔═══════════════════════════════╗\n║  ${BLUE}Zapret Manager by StressOzz${NC}  ║\n╚═══════════════════════════════╝\n${DGRAY}тгк:@${NC}stressozz_manager${DGRAY} - заходи !\n${NC}StressKVN${DGRAY}-${DGRAY}VPN для всех устройств!${NC}\n"
+show_menu() { get_versions; get_doh_status; show_current_strategy; RKN_Check; mkdir -p "$TMP_SF"; CURR=$(curr_MIR); clear; echo -e "╔═══════════════════════════════╗\n║  ${BLUE}Zapret Manager by StressOzz${NC}  ║\n╚═══════════════════════════════╝\n"
 echo -e "Используйте ${GREEN}WEB${NC} версию! Установка через ${GREEN}w${NC}!\n${RED}Версиия для SSH не совместима с WEB и LuCI!${NC}\n"
 if [ -f /etc/init.d/zapret ] && [ -f "$CONF" ] && grep -Eq "^[[:space:]]*option DISABLE_IPV6 '1'" "$CONF" && ping -6 -c 1 -W 2 google.com >/dev/null 2>&1; then echo -e "${RED}Обнаружен IPv6! ${GREEN}Включите ${NC}IPv6${GREEN} в системном меню!${NC}\n"; fi
 if [ ! -f /etc/init.d/zapret2 ]; then Z2_ACTION_TEXT="Установить"; Z2_ACTION_FUNC="install_zapret2"; elif [ "$INSTALLED_VER2" = "$ZAPRET2_VERSION" ]; then Z2_ACTION_TEXT="Удалить"; Z2_ACTION_FUNC="remove_zapret2"; else Z2_ACTION_TEXT="Обновить"; Z2_ACTION_FUNC="install_zapret2"; fi
@@ -2007,7 +2036,7 @@ echo -e "\n${CYAN}1) ${GREEN}Меню${NC} Zapret\n${CYAN}2) ${GREEN}$Z2_ACTION_
 echo -e "${CYAN}f) ${GREEN}Удалить ${NC}→${GREEN} установить ${NC}→${GREEN} настроить${NC} Zapret\n${CYAN}m) ${GREEN}Системное меню${NC}"; [ "$SHOW_S" = "1" ] && echo -e "${CYAN}s) ${GREEN}$S_ACTION${NC} $S_NAME"
 zm_luci_state; case "$ZML_ACT" in update) echo -e "${CYAN}w)${GREEN} Обновить ${NC}Zapret Manager ${GREEN}для ${NC}WEB ${GREEN}+ ${NC}LuCI ${GREEN}(${NC}${ZML_INST:-?} → $ZML_LAST${GREEN})${NC}" ;; remove) echo -e "${CYAN}w)${GREEN} Удалить ${NC}Zapret Manager ${GREEN}для ${NC}WEB ${GREEN}+ ${NC}LuCI" ;; *) echo -e "${CYAN}w)${GREEN} Установить ${NC}Zapret Manager ${GREEN}для ${NC}WEB ${GREEN}+ ${NC}LuCI" ;; esac
 [ "$SHOW_S" = "2" ] && echo -e "${CYAN}s1) ${GREEN}$S1_ACTION${NC} Zapret\n${CYAN}s2) ${GREEN}$S2_ACTION${NC} Zapret2"; echo -ne "${CYAN}Enter) ${GREEN}Выход${NC}\n\n${YELLOW}Выберите пункт:${NC} " && read choice
-case "$choice" in 999) echo; uninstall_zapret "1"; install_Zapret "1"; curl -fsSL ${GH_RAW}/StressOzz/Test/refs/heads/main/zapret -o "$CONF"; hosts_add "$ALL_BLOCKS"; rm -f "$EXCLUDE_FILE"; wget -q -U "Mozilla/5.0" -O "$EXCLUDE_FILE" "$EXCLUDE_URL"; ZAPRET_RESTART; PAUSE;;
+case "$choice" in 
 1) MENU_ZAPRET;;
 2) $Z2_ACTION_FUNC;;
 3) STEER_MENU ;;

@@ -264,8 +264,9 @@ allow-lan: true
 unified-delay: true
 tcp-concurrent: false
 find-process-mode: off
-external-controller: 0.0.0.0:9090
+external-controller: 127.0.0.1:9090
 external-ui: ./ui
+secret: ZMSEC
 routing-mark: 2
 profile:
   store-selected: true
@@ -321,6 +322,13 @@ rule-providers:
 rules:
   - MATCH,Домашний интернет
 EOF
+        if grep -q '^secret: ZMSEC$' "$CONFIG_FILE" 2>/dev/null; then
+            _zmsec=""
+            mkdir -p /etc/mihomo
+            if [ -s /etc/mihomo/.zm_api_secret ]; then _zmsec=$(tr -cd 'A-Za-z0-9' < /etc/mihomo/.zm_api_secret | head -c 32); fi
+            if [ -z "$_zmsec" ]; then _zmsec=$(od -An -tx1 -N 16 /dev/urandom 2>/dev/null | tr -d ' \n'); printf '%s\n' "$_zmsec" > /etc/mihomo/.zm_api_secret; chmod 600 /etc/mihomo/.zm_api_secret 2>/dev/null; fi
+            sed -i "s/^secret: ZMSEC$/secret: ${_zmsec}/" "$CONFIG_FILE"
+        fi
     fi
 
     echo "Создание службы /etc/init.d/mihomo"
